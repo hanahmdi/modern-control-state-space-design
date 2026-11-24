@@ -1,0 +1,1539 @@
+
+clc;
+clear;
+close all;
+
+%% Question 1
+
+num = [3.6 6.42];
+den = [1 7.317 17.67 14.08];
+
+system = tf(num,den);
+
+disp('System Transfer Function:')
+system
+
+zeros_system = zero(system);
+poles_system = pole(system);
+
+disp('Zeros:')
+disp(zeros_system)
+
+disp('Poles:')
+disp(poles_system)
+
+figure;
+pzmap(system);
+grid on;
+title('Pole-Zero Map');
+
+figure;
+step(system);
+grid on;
+title('Open Loop Step Response');
+
+%% Question 2
+
+[A,B,C,D] = tf2ss(num,den);
+
+disp('State Space Matrices')
+
+A
+B
+C
+D
+
+%% Question 3
+
+Co = ctrb(A,B);
+Ob = obsv(A,C);
+
+disp('Rank of Controllability Matrix')
+disp(rank(Co))
+
+disp('Rank of Observability Matrix')
+disp(rank(Ob))
+
+%% Question 4
+
+system_ss = ss(A,B,C,D);
+
+system_min = minreal(system_ss);
+
+disp('Minimal Realization:')
+system_min
+
+%% Question 5
+
+figure;
+step(system_ss);
+grid on;
+title('Step Response');
+
+X0 = [1;1;2];
+
+t = 0:0.01:10;
+
+figure;
+initial(system_ss,X0,t);
+grid on;
+title('Initial Condition Response');
+
+%% Question 6
+
+A2 = A - B*[1 1 1];
+
+system_new = ss(A2,B,C,D);
+
+figure;
+step(system_new);
+grid on;
+title('Closed Loop Step Response');
+
+zeros_new = zero(system_new);
+poles_new = pole(system_new);
+
+disp('New Poles')
+disp(poles_new)
+
+disp('New Zeros')
+disp(zeros_new)
+
+%% Question 7 - Part 1
+
+P1 = [-2 -3 -6];
+
+K1 = place(A,B,P1);
+
+Acl1 = A-B*K1;
+
+system7 = ss(Acl1,B,C,D);
+
+figure;
+step(system7);
+grid on;
+title('Pole Placement (Real Poles)');
+
+disp('Step Information')
+
+info_open = stepinfo(system_ss)
+
+info_cl = stepinfo(system7)
+
+[y7,t7,x7] = step(system7,t);
+
+u7 = -K1*x7';
+
+figure;
+plot(t7,u7,'LineWidth',1.5);
+grid on;
+title('Control Signal');
+
+xk = zeros(3,length(t));
+
+for k=2:length(t)
+
+    xk(:,k)=xk(:,k-1)+0.01*(Acl1*xk(:,k-1)+B);
+
+end
+
+figure;
+
+subplot(3,1,1)
+plot(t,xk(1,:),'LineWidth',1.5)
+grid on
+title('X1')
+
+subplot(3,1,2)
+plot(t,xk(2,:),'r','LineWidth',1.5)
+grid on
+title('X2')
+
+subplot(3,1,3)
+plot(t,xk(3,:),'g','LineWidth',1.5)
+grid on
+title('X3')
+
+%% Question 7 - Part 2
+
+P2 = [-2+1i -2-1i -2.5];
+
+K2 = place(A,B,P2);
+
+Acl2 = A-B*K2;
+
+system72 = ss(Acl2,B,C,D);
+
+disp('Open Loop Poles')
+disp(pole(system_ss))
+
+disp('Closed Loop Poles')
+disp(pole(system72))
+
+disp('Open Loop Zeros')
+disp(zero(system_ss))
+
+disp('Closed Loop Zeros')
+disp(zero(system72))
+
+figure;
+step(system72);
+grid on;
+title('Pole Placement (Complex Poles)');
+
+info_complex = stepinfo(system72)
+
+[y8,t8,x8] = step(system72,t);
+
+figure;
+
+subplot(3,1,1)
+plot(t8,x8(:,1),'LineWidth',1.5)
+grid on
+title('X1')
+
+subplot(3,1,2)
+plot(t8,x8(:,2),'r','LineWidth',1.5)
+grid on
+title('X2')
+
+subplot(3,1,3)
+plot(t8,x8(:,3),'g','LineWidth',1.5)
+grid on
+title('X3')
+
+u8 = -x8*K2'+1;
+
+figure;
+plot(t8,u8,'LineWidth',1.5);
+grid on;
+title('Control Signal');
+
+%% Question 8 - Static Tracker
+
+% Desired poles
+p8 = [-2 -3 -6];
+
+% State feedback gain
+K = place(A,B,p8);
+
+% Closed loop system
+A_cl = A - B*K;
+
+
+% Reference gain calculation
+k3 = 1/(C*inv(-A_cl)*B);
+
+
+% Closed loop tracker
+B_trck = B*k3;
+
+static_trck = ss(A_cl,B_trck,C,D);
+
+
+% Step Response
+
+figure;
+step(static_trck);
+grid on;
+title('Static Tracker Step Response');
+
+info_static = stepinfo(static_trck);
+
+disp('Static Tracker Step Information')
+disp(info_static)
+
+
+
+% State Response
+
+t = 0:0.01:10;
+
+x_static = zeros(size(A,1),length(t));
+
+x_static(:,1) = [0;0;0];
+
+
+for k = 2:length(t)
+
+    x_static(:,k)=x_static(:,k-1)+0.01*...
+        (A_cl*x_static(:,k-1)+B_trck);
+
+end
+
+
+
+figure;
+
+subplot(3,1,1)
+plot(t,x_static(1,:),'LineWidth',1.5)
+grid on
+title('Static Tracker X1')
+
+
+subplot(3,1,2)
+plot(t,x_static(2,:),'r','LineWidth',1.5)
+grid on
+title('Static Tracker X2')
+
+
+subplot(3,1,3)
+plot(t,x_static(3,:),'g','LineWidth',1.5)
+grid on
+title('Static Tracker X3')
+
+xlabel('Time (s)')
+
+
+
+% Control Signal
+
+u_static = -K*x_static + k3;
+
+
+figure;
+
+plot(t,u_static,'LineWidth',1.5)
+
+grid on
+
+title('Static Tracker Control Signal u(t)')
+xlabel('Time (s)')
+ylabel('u')
+
+%% Question 9 - Integral Tracker
+
+% System dimensions
+n = size(A,1);
+m = size(C,1);
+
+
+% Augmented system
+A_bar = [A zeros(n,m);
+        -C zeros(m,m)];
+
+B_bar = [B;
+         zeros(m,1)];
+
+
+% Desired poles for integral controller
+p_int = [-1.5 -1.6 -1.7 -1.8];
+
+
+% Integral feedback gain
+K_int = acker(A_bar,B_bar,p_int);
+
+
+disp('Integral Controller Gain')
+disp(K_int)
+
+
+
+% Closed loop augmented system
+
+A_int_cl = A_bar - B_bar*K_int;
+
+
+integral_trck = ss(A_int_cl,...
+                   [zeros(n,1);1],...
+                   [C 0],...
+                   0);
+
+
+
+% Simulation
+
+yd = 1;
+
+t = 0:0.01:10;
+
+N = length(t);
+
+
+x_int = zeros(n+m,N);
+
+
+
+for k = 2:N
+
+
+    u_int = -K_int*x_int(:,k-1);
+
+
+    x_int(:,k)=x_int(:,k-1)+0.01*(...
+        A_bar*x_int(:,k-1)+...
+        B_bar*u_int+...
+        [zeros(n,1);yd]);
+
+end
+
+
+
+% Output
+
+y_int = C*x_int(1:n,:);
+
+
+
+% Step Response
+
+figure;
+
+plot(t,y_int,'LineWidth',2)
+
+grid on
+
+title('Integral Tracker Step Response')
+
+xlabel('Time (s)')
+
+ylabel('Output')
+
+ylim([0 1.1])
+
+
+
+% State Response
+
+figure;
+
+
+subplot(3,1,1)
+plot(t,x_int(1,:),'r','LineWidth',1.5)
+grid on
+title('Integral Tracker X1')
+
+
+subplot(3,1,2)
+plot(t,x_int(2,:),'g','LineWidth',1.5)
+grid on
+title('Integral Tracker X2')
+
+
+subplot(3,1,3)
+plot(t,x_int(3,:),'m','LineWidth',1.5)
+grid on
+title('Integral Tracker X3')
+
+
+xlabel('Time (s)')
+
+%% Question 10 - Comparison
+
+figure('position',[0 0 2000 700]);
+
+
+subplot(1,2,1)
+
+step(static_trck)
+
+grid on
+
+title('Static Tracker')
+
+
+subplot(1,2,2)
+
+step(integral_trck)
+
+grid on
+
+title('Integral Tracker')
+
+
+% State Comparison
+
+figure();
+
+
+subplot(3,1,1)
+
+plot(t,x_static(1,:),"b",t,x_int(1,:),"r");
+
+legend("static","integral")
+
+title("X1")
+
+grid on
+
+
+
+subplot(3,1,2)
+
+plot(t,x_static(2,:),"b",t,x_int(2,:),"r");
+
+legend("static","integral")
+
+title("X2")
+
+grid on
+
+
+
+subplot(3,1,3)
+
+plot(t,x_static(3,:),"b",t,x_int(3,:),"r");
+
+legend("static","integral")
+
+title("X3")
+
+grid on
+
+%% Parameter Change Part 1
+
+
+x_static(:,1)=[0;0;0];
+
+change2 = 10*[0 0 0;
+             1 0 1;
+             0 1 0];
+
+
+for i=2:length(t)
+
+x_static(:,i)=x_static(:,i-1)+0.01*((A_cl+change2)*...
+x_static(:,i-1)+B_trck);
+
+end
+
+
+
+x_int(:,1)=[0;0;0;0];
+
+
+change = 1*[0 0 0 0;
+            1 0 1 0;
+            0 1 0 0;
+            0 0 0 0];
+
+
+for k=2:length(t)
+
+
+u=-K_int*x_int(:,k-1);
+
+
+x_int(:,k)=x_int(:,k-1)+0.01*((A_bar+change)*...
+x_int(:,k-1)+B_bar*u+[zeros(n,1);1]);
+
+
+end
+
+
+
+figure();
+
+
+subplot(3,1,1)
+
+plot(t,x_static(1,:),"b",t,x_int(1,:),"r")
+
+legend("static","integral")
+
+title("X1")
+
+
+subplot(3,1,2)
+
+plot(t,x_static(2,:),"b",t,x_int(2,:),"r")
+
+legend("static","integral")
+
+title("X2")
+
+
+subplot(3,1,3)
+
+plot(t,x_static(3,:),"b",t,x_int(3,:),"r")
+
+legend("static","integral")
+
+title("X3")
+
+grid on
+
+%% 10-3 Change in feedback affected parameters
+
+
+% Static Tracker
+
+x_static(:,1)=[0;0;0];
+
+
+change2 = 9*[1 1 1;
+              0 0 0;
+              0 0 0];
+
+
+for i=2:length(t)
+
+
+    u = -K*x_static(:,i-1)+k3;
+
+
+    x_static(:,i)=x_static(:,i-1)+0.01*(...
+        (A+change2)*x_static(:,i-1)+B*u);
+
+
+end
+
+
+
+% Integral Tracker
+
+x_int(:,1)=[0;0;0;0];
+
+
+change = 3*[1 1 1 1;
+             0 0 0 0;
+             0 0 0 0;
+             0 0 0 0];
+
+
+for k=2:length(t)
+
+
+    u=-K_int*x_int(:,k-1);
+
+
+    x_int(:,k)=x_int(:,k-1)+0.01*(...
+        (A_bar+change)*x_int(:,k-1)+...
+        B_bar*u+[zeros(n,1);1]);
+
+
+end
+
+
+
+figure();
+
+subplot(3,1,1)
+
+plot(t,x_static(1,:),"b",...
+     t,x_int(1,:),"r")
+
+legend("static","integral")
+
+title("X1")
+
+
+subplot(3,1,2)
+
+plot(t,x_static(2,:),"b",...
+     t,x_int(2,:),"r")
+
+legend("static","integral")
+
+title("X2")
+
+
+subplot(3,1,3)
+
+plot(t,x_static(3,:),"b",...
+     t,x_int(3,:),"r")
+
+legend("static","integral")
+
+title("X3")
+
+grid on
+%% Constant Disturbance
+
+
+disturb_s=[1;0;0];
+
+disturb_i=[1;0;0;0];
+
+
+x_static(:,1)=[0;0;0];
+
+
+for i=2:length(t)
+
+
+x_static(:,i)=x_static(:,i-1)+0.01*(...
+A_cl*x_static(:,i-1)+B_trck+disturb_s);
+
+
+end
+
+
+
+x_int(:,1)=[0;0;0;0];
+
+
+for k=2:length(t)
+
+
+u=-K_int*x_int(:,k-1);
+
+
+x_int(:,k)=x_int(:,k-1)+0.01*(...
+A_bar*x_int(:,k-1)+B_bar*u+[zeros(n,1);1]+disturb_i);
+
+
+end
+
+
+
+figure();
+
+
+subplot(3,1,1)
+
+plot(t,x_static(1,:),"b",t,x_int(1,:),"r")
+
+legend("static","integral")
+
+title("X1")
+
+
+subplot(3,1,2)
+
+plot(t,x_static(2,:),"b",t,x_int(2,:),"r")
+
+legend("static","integral")
+
+title("X2")
+
+
+subplot(3,1,3)
+
+plot(t,x_static(3,:),"b",t,x_int(3,:),"r")
+
+legend("static","integral")
+
+title("X3")
+
+grid on
+%% 10-5 Time Varying Disturbance
+
+
+disturb_s=[1;0;0];
+
+disturb_i=[1;0;0;0];
+
+
+% Static tracker
+
+x_static(:,1)=[0;0;0];
+
+
+for i=2:length(t)
+
+
+    if i < 500
+
+        x_static(:,i)=x_static(:,i-1)+0.01*(...
+        A_cl*x_static(:,i-1)+B_trck+disturb_s);
+
+    else
+
+        x_static(:,i)=x_static(:,i-1)+0.01*(...
+        A_cl*x_static(:,i-1)+B_trck+10*disturb_s);
+
+    end
+
+end
+
+
+
+% Integral tracker
+
+x_int(:,1)=[0;0;0;0];
+
+
+for k=2:length(t)
+
+
+    if k < 500
+
+
+        u=-K_int*x_int(:,k-1);
+
+
+        x_int(:,k)=x_int(:,k-1)+0.01*(...
+        A_bar*x_int(:,k-1)+...
+        B_bar*u+...
+        [zeros(n,1);1]+disturb_i);
+
+
+
+    else
+
+
+        u=-K_int*x_int(:,k-1);
+
+
+        x_int(:,k)=x_int(:,k-1)+0.01*(...
+        A_bar*x_int(:,k-1)+...
+        B_bar*u+...
+        [zeros(n,1);1]+10*disturb_i);
+
+
+    end
+
+end
+
+
+
+figure();
+
+
+subplot(3,1,1)
+
+plot(t,x_static(1,:),"b",...
+     t,x_int(1,:),"r")
+
+legend("static","integral")
+
+title("X1")
+
+
+
+subplot(3,1,2)
+
+plot(t,x_static(2,:),"b",...
+     t,x_int(2,:),"r")
+
+legend("static","integral")
+
+title("X2")
+
+
+
+subplot(3,1,3)
+
+plot(t,x_static(3,:),"b",...
+     t,x_int(3,:),"r")
+
+legend("static","integral")
+
+title("X3")
+
+grid on
+
+%% Question 11
+
+P_obs1 = [-4 -5 -6];
+L1 = acker(A',C',P_obs1)'
+
+x_obs1 = zeros(6,length(t));
+x_obs1(:,1) = zeros(6,1);
+
+A_obs1 = [A zeros(3);
+          L1*C  A-L1*C]
+
+B_obs1 = [B;
+          B]
+
+for k=2:length(t)
+    x_obs1(:,k)=x_obs1(:,k-1)+...
+        0.01*(A_obs1*x_obs1(:,k-1)+B_obs1);
+
+end
+
+figure
+subplot(2,1,1)
+plot(t,x_obs1(1:3,:))
+title('Actual States')
+
+
+subplot(2,1,2)
+plot(t,x_obs1(4:6,:))
+title('Estimated States')
+
+figure
+subplot(3,1,1)
+plot(t,x_obs1(1,:)-x_obs1(4,:))
+title('Error x1')
+grid on
+
+subplot(3,1,2)
+plot(t,x_obs1(2,:)-x_obs1(5,:))
+title('Error x2')
+grid on
+
+subplot(3,1,3)
+plot(t,x_obs1(3,:)-x_obs1(6,:))
+title('Error x3')
+grid on
+
+% Question 11-2
+
+P_obs2 = [-10 -12 -15];
+
+L2 = acker(A',C',P_obs2)';
+
+disp('Observer Gain (Fast Poles):')
+disp(L2)
+
+x_obs2 = zeros(2*n,length(t));
+x_obs2(:,1) = zeros(2*n,1);
+
+A_obs2 = [A zeros(n);
+          L2*C  A-L2*C];
+
+B_obs2 = [B;
+          B];
+
+for k = 2:length(t)
+    x_obs2(:,k) = x_obs2(:,k-1) + ...
+        0.01*(A_obs2*x_obs2(:,k-1) + B_obs2);
+end
+
+figure();
+subplot(2,1,1)
+plot(t,x_obs2(1:3,:),'LineWidth',1.2)
+grid on
+title('Actual States')
+
+subplot(2,1,2)
+plot(t,x_obs2(4:6,:),'LineWidth',1.2)
+grid on
+title('Estimated States')
+
+figure();
+subplot(3,1,1)
+plot(t,x_obs2(1,:)-x_obs2(4,:),'LineWidth',1.5)
+grid on
+title('Estimation Error of x_1')
+
+subplot(3,1,2)
+plot(t,x_obs2(2,:)-x_obs2(5,:),'LineWidth',1.5)
+grid on
+title('Estimation Error of x_2')
+
+subplot(3,1,3)
+plot(t,x_obs2(3,:)-x_obs2(6,:),'LineWidth',1.5)
+grid on
+title('Estimation Error of x_3')
+
+%% Question 12
+
+change = [0 0 0;
+          0 1 0;
+          0 0 0];
+
+A_changed = A + change;
+
+A_new1 = [A_changed      zeros(n);
+          L1*C           A_changed-L1*C]
+
+B_new1 = [B;
+          B]
+
+x_new1 = zeros(2*n,length(t))
+x_new1(:,1) = zeros(2*n,1)
+
+for k = 2:length(t)
+
+    x_new1(:,k) = x_new1(:,k-1) + ...
+        0.01*(A_new1*x_new1(:,k-1)+B_new1)
+
+end
+
+figure()
+subplot(2,1,1)
+plot(t,x_new1(1:3,:),'LineWidth',1.5)
+grid on
+title('Actual States (Slow Observer)')
+xlabel('Time (s)')
+ylabel('States')
+
+subplot(2,1,2)
+plot(t,x_new1(4:6,:),'LineWidth',1.5)
+grid on
+title('Estimated States (Slow Observer)')
+xlabel('Time (s)')
+ylabel('Estimated States')
+
+figure()
+subplot(3,1,1)
+plot(t,x_new1(1,:)-x_new1(4,:),'LineWidth',1.5)
+grid on
+title('Estimation Error of x_1')
+
+subplot(3,1,2)
+plot(t,x_new1(2,:)-x_new1(5,:),'LineWidth',1.5)
+grid on
+title('Estimation Error of x_2')
+
+subplot(3,1,3)
+plot(t,x_new1(3,:)-x_new1(6,:),'LineWidth',1.5)
+grid on
+title('Estimation Error of x_3')
+
+A_new2 = [A_changed      zeros(n);
+          L2*C           A_changed-L2*C]
+
+B_new2 = [B;
+          B]
+
+x_new2 = zeros(2*n,length(t));
+x_new2(:,1) = zeros(2*n,1);
+
+for k = 2:length(t)
+
+    x_new2(:,k) = x_new2(:,k-1) + ...
+        0.01*(A_new2*x_new2(:,k-1)+B_new2);
+
+end
+
+figure()
+
+subplot(2,1,1)
+plot(t,x_new2(1:3,:),'LineWidth',1.5)
+grid on
+title('Actual States (Fast Observer)')
+xlabel('Time (s)')
+ylabel('States')
+
+subplot(2,1,2)
+plot(t,x_new2(4:6,:),'LineWidth',1.5)
+grid on
+title('Estimated States (Fast Observer)')
+xlabel('Time (s)')
+ylabel('Estimated States')
+
+figure()
+subplot(3,1,1)
+plot(t,x_new2(1,:)-x_new2(4,:),'LineWidth',1.5)
+grid on
+title('Estimation Error of x_1')
+
+subplot(3,1,2)
+plot(t,x_new2(2,:)-x_new2(5,:),'LineWidth',1.5)
+grid on
+title('Estimation Error of x_2')
+
+subplot(3,1,3)
+plot(t,x_new2(3,:)-x_new2(6,:),'LineWidth',1.5)
+grid on
+title('Estimation Error of x_3')
+
+%% Question 13
+
+%% Question 11
+
+P_obs1 = [-4 -5 -6];
+L1 = acker(A',C',P_obs1)'
+
+x_obs1 = zeros(6,length(t));
+x_obs1(:,1) = zeros(6,1);
+
+A_obs1 = [A zeros(3);
+          L1*C  A-L1*C]
+
+B_obs1 = [B;
+          B]
+
+for k=2:length(t)
+    x_obs1(:,k)=x_obs1(:,k-1)+...
+        0.01*(A_obs1*x_obs1(:,k-1)+B_obs1);
+
+end
+
+figure
+subplot(2,1,1)
+plot(t,x_obs1(1:3,:))
+title('Actual States')
+
+
+subplot(2,1,2)
+plot(t,x_obs1(4:6,:))
+title('Estimated States')
+
+figure
+subplot(3,1,1)
+plot(t,x_obs1(1,:)-x_obs1(4,:))
+title('Error x1')
+grid on
+
+subplot(3,1,2)
+plot(t,x_obs1(2,:)-x_obs1(5,:))
+title('Error x2')
+grid on
+
+subplot(3,1,3)
+plot(t,x_obs1(3,:)-x_obs1(6,:))
+title('Error x3')
+grid on
+
+% Question 11-2
+
+P_obs2 = [-10 -12 -15];
+
+L2 = acker(A',C',P_obs2)';
+
+disp('Observer Gain (Fast Poles):')
+disp(L2)
+
+x_obs2 = zeros(2*n,length(t));
+x_obs2(:,1) = zeros(2*n,1);
+
+A_obs2 = [A zeros(n);
+          L2*C  A-L2*C];
+
+B_obs2 = [B;
+          B];
+
+for k = 2:length(t)
+    x_obs2(:,k) = x_obs2(:,k-1) + ...
+        0.01*(A_obs2*x_obs2(:,k-1) + B_obs2);
+end
+
+figure();
+subplot(2,1,1)
+plot(t,x_obs2(1:3,:),'LineWidth',1.2)
+grid on
+title('Actual States')
+
+subplot(2,1,2)
+plot(t,x_obs2(4:6,:),'LineWidth',1.2)
+grid on
+title('Estimated States')
+
+figure();
+subplot(3,1,1)
+plot(t,x_obs2(1,:)-x_obs2(4,:),'LineWidth',1.5)
+grid on
+title('Estimation Error of x_1')
+
+subplot(3,1,2)
+plot(t,x_obs2(2,:)-x_obs2(5,:),'LineWidth',1.5)
+grid on
+title('Estimation Error of x_2')
+
+subplot(3,1,3)
+plot(t,x_obs2(3,:)-x_obs2(6,:),'LineWidth',1.5)
+grid on
+title('Estimation Error of x_3')
+
+%% Question 12
+
+change = [0 0 0;
+          0 1 0;
+          0 0 0];
+
+A_changed = A + change;
+
+A_new1 = [A_changed      zeros(n);
+          L1*C           A_changed-L1*C]
+
+B_new1 = [B;
+          B]
+
+x_new1 = zeros(2*n,length(t))
+x_new1(:,1) = zeros(2*n,1)
+
+for k = 2:length(t)
+
+    x_new1(:,k) = x_new1(:,k-1) + ...
+        0.01*(A_new1*x_new1(:,k-1)+B_new1)
+
+end
+
+figure()
+subplot(2,1,1)
+plot(t,x_new1(1:3,:),'LineWidth',1.5)
+grid on
+title('Actual States (Slow Observer)')
+xlabel('Time (s)')
+ylabel('States')
+
+subplot(2,1,2)
+plot(t,x_new1(4:6,:),'LineWidth',1.5)
+grid on
+title('Estimated States (Slow Observer)')
+xlabel('Time (s)')
+ylabel('Estimated States')
+
+figure()
+subplot(3,1,1)
+plot(t,x_new1(1,:)-x_new1(4,:),'LineWidth',1.5)
+grid on
+title('Estimation Error of x_1')
+
+subplot(3,1,2)
+plot(t,x_new1(2,:)-x_new1(5,:),'LineWidth',1.5)
+grid on
+title('Estimation Error of x_2')
+
+subplot(3,1,3)
+plot(t,x_new1(3,:)-x_new1(6,:),'LineWidth',1.5)
+grid on
+title('Estimation Error of x_3')
+
+A_new2 = [A_changed      zeros(n);
+          L2*C           A_changed-L2*C]
+
+B_new2 = [B;
+          B]
+
+x_new2 = zeros(2*n,length(t));
+x_new2(:,1) = zeros(2*n,1);
+
+for k = 2:length(t)
+
+    x_new2(:,k) = x_new2(:,k-1) + ...
+        0.01*(A_new2*x_new2(:,k-1)+B_new2);
+
+end
+
+figure()
+
+subplot(2,1,1)
+plot(t,x_new2(1:3,:),'LineWidth',1.5)
+grid on
+title('Actual States (Fast Observer)')
+xlabel('Time (s)')
+ylabel('States')
+
+subplot(2,1,2)
+plot(t,x_new2(4:6,:),'LineWidth',1.5)
+grid on
+title('Estimated States (Fast Observer)')
+xlabel('Time (s)')
+ylabel('Estimated States')
+
+figure()
+subplot(3,1,1)
+plot(t,x_new2(1,:)-x_new2(4,:),'LineWidth',1.5)
+grid on
+title('Estimation Error of x_1')
+
+subplot(3,1,2)
+plot(t,x_new2(2,:)-x_new2(5,:),'LineWidth',1.5)
+grid on
+title('Estimation Error of x_2')
+
+subplot(3,1,3)
+plot(t,x_new2(3,:)-x_new2(6,:),'LineWidth',1.5)
+grid on
+title('Estimation Error of x_3')
+
+%% Question 13
+
+P = [C; [1 0 0]; [0 1 0]];
+
+disp('Rank of Transformation Matrix P:')
+disp(rank(P))
+
+A_ro = P * A * inv(P);
+B_ro = P * B;
+C_ro = C * inv(P);
+A_11 = A_ro(1,1);
+A_12 = A_ro(1,2:3);
+A_21 = A_ro(2:3,1);
+A_22 = A_ro(2:3,2:3);
+B_1 = B_ro(1,1);
+B_2 = B_ro(2:3,1);
+ro_p = [-1, -5];
+L_t = place(A_22', A_12', ro_p);
+L_ro = L_t';
+ct = length(t);
+xn = zeros(3, ct);
+z = zeros(2, ct);
+y_ro = zeros(1, ct);
+
+xn(:,1) = [0; 0; 0];
+z(:,1)  = [0; 0];
+
+for k = 2:ct
+    
+    y_ro(k) = C_ro * xn(:,k-1); 
+    xn(:,k) = xn(:,k-1) + 0.01 * (A_ro * xn(:,k-1) + B_ro);
+    z(:,k) = z(:,k-1) + 0.01 * ((A_22 - L_ro * A_12) * z(:,k-1) + ...
+                                ((A_22 - L_ro * A_12) * L_ro + A_21) * y_ro(k-1) + ...
+                                (B_2 - L_ro * B_1));
+end
+
+x_actual = inv(P) * xn;
+
+x_ro = (inv(P) * [[1 0 0]; [L_ro eye(2)]]) * [y_ro; z];
+
+figure();
+subplot(2,1,1);
+plot(t, x_actual(1:3,:), 'LineWidth', 1.5);
+title("Actual");
+grid on;
+legend('x_1', 'x_2', 'x_3');
+
+subplot(2,1,2);
+plot(t, x_ro, 'LineWidth', 1.5);
+
+title("Estimated");
+grid on;
+legend('x_{est1}', 'x_{est2}', 'x_{est3}');
+
+figure();
+
+subplot(3,1,1);
+plot(t, x_actual(1,:) - x_ro(1,:), 'k', 'LineWidth', 1.5);
+title("Estimation Error x_1");
+grid on;
+
+subplot(3,1,2);
+plot(t, x_actual(2,:) - x_ro(2,:), 'k', 'LineWidth', 1.5);
+title("Estimation Error x_2");
+grid on;
+
+subplot(3,1,3);
+plot(t, x_actual(3,:) - x_ro(3,:), 'k', 'LineWidth', 1.5);
+title("Estimation Error x_3");
+grid on;
+
+%% Question 14
+
+%% Question 14 - Observer-Based State Feedback (Regulator)
+
+p_control = [-2, -3, -6];       
+p_observer = [-10, -12, -15];  
+K_comp = place(A, B, p_control);      
+L_comp = acker(A', C', p_observer)';  
+A_cl_pure = A - B * K_comp;
+kr = 1 / (C * inv(-A_cl_pure) * B);
+
+N = length(t);
+x_sys = zeros(3, N);    
+x_hat = zeros(3, N);   
+y_comp = zeros(1, N);  
+x_sys(:,1) = [0; 0; 0];
+x_hat(:,1) = [0; 0; 0]; 
+
+for k = 2:N
+    
+    u_comp = -K_comp * x_hat(:, k-1) + kr * 1; 
+    x_sys(:, k) = x_sys(:, k-1) + 0.01 * (A * x_sys(:, k-1) + B * u_comp);
+    y_comp(k-1) = C * x_sys(:, k-1);
+    x_hat(:, k) = x_hat(:, k-1) + 0.01 * (A * x_hat(:, k-1) + B * u_comp + ...
+                  L_comp * (y_comp(k-1) - C * x_hat(:, k-1)));
+end
+
+y_comp(N) = C * x_sys(:, N);
+
+figure;
+plot(t, y_comp, 'b', 'LineWidth', 2);
+grid on;
+title('Step Response of Observer-Based Closed-Loop System');
+xlabel('Time (s)');
+ylabel('Output (y)');
+
+figure('Name', 'Question 14 - System States');
+
+subplot(3,1,1);
+plot(t, x_sys(1,:), 'b', t, x_hat(1,:), 'r--', 'LineWidth', 1.5);
+grid on;
+title('State x_1');
+legend('Actual x_1', 'Estimated x_1');
+
+subplot(3,1,2);
+plot(t, x_sys(2,:), 'b', t, x_hat(2,:), 'r--', 'LineWidth', 1.5);
+grid on;
+title('State x_2');
+legend('Actual x_2', 'Estimated x_2');
+
+subplot(3,1,3);
+plot(t, x_sys(3,:), 'b', t, x_hat(3,:), 'r--', 'LineWidth', 1.5);
+grid on;
+title('State x_3');
+legend('Actual x_3', 'Estimated x_3');
+xlabel('Time (s)');
+
+%% Question 15
+P = [C; [1 0 0]; [0 1 0]];
+A_ro = P * A / P;
+B_ro = P * B;
+C_ro = C / P;
+
+A_11 = A_ro(1,1);
+A_12 = A_ro(1,2:3);
+A_21 = A_ro(2:3,1);
+A_22 = A_ro(2:3,2:3);
+B_1 = B_ro(1,1);
+B_2 = B_ro(2:3,1);
+
+p_ctrl15 = [-3, -4, -5];
+K15 = place(A, B, p_ctrl15);
+
+p_obs15 = [-10, -12];
+L_t15 = place(A_22', A_12', p_obs15);
+L15 = L_t15';
+
+A_cl_ideal = A - B * K15;
+kr15 = 1 / (C * inv(-A_cl_ideal) * B);
+
+D_red = A_22 - L15 * A_12;
+F_red = D_red * L15 + A_21 - L15 * A_11;
+G_red = B_2 - L15 * B_1;
+
+N15 = length(t);
+x_sys15 = zeros(3, N15);
+z15 = zeros(2, N15);
+x_hat15 = zeros(3, N15);
+y15 = zeros(1, N15);
+
+for k = 2:N15
+    y_curr = C * x_sys15(:, k-1);
+    y15(k-1) = y_curr;
+    
+    xb_hat = z15(:, k-1) + L15 * y_curr;
+    x_hat15(:, k-1) = P \ [y_curr; xb_hat];
+    
+    u15 = -K15 * x_hat15(:, k-1) + kr15 * 1;
+    
+    x_sys15(:, k) = x_sys15(:, k-1) + 0.01 * (A * x_sys15(:, k-1) + B * u15);
+    z15(:, k) = z15(:, k-1) + 0.01 * (D_red * z15(:, k-1) + F_red * y_curr + G_red * u15);
+end
+
+y15(N15) = C * x_sys15(:, N15);
+xb_hat_final = z15(:, N15) + L15 * y15(N15);
+x_hat15(:, N15) = P \ [y15(N15); xb_hat_final];
+figure();
+plot(t, y15, 'b', 'LineWidth', 2);
+grid on;
+title('Step Response (Reduced-Order Observer Feedback)');
+
+figure();
+subplot(3,1,1);
+plot(t, x_sys15(1,:), 'b', t, x_hat15(1,:), 'r--', 'LineWidth', 1.5);
+legend('Actual X1', 'Estimated X1');
+grid on;
+
+subplot(3,1,2);
+plot(t, x_sys15(2,:), 'b', t, x_hat15(2,:), 'r--', 'LineWidth', 1.5);
+legend('Actual X2', 'Estimated X2');
+grid on;
+
+subplot(3,1,3);
+plot(t, x_sys15(3,:), 'b', t, x_hat15(3,:), 'r--', 'LineWidth', 1.5);
+legend('Actual X3', 'Estimated X3');
+grid on;
+
+%% Questio  16
+
+
+A_bar16 = [A zeros(3,1); -C 0];
+B_bar16 = [B; 0];
+p_track16 = [-3, -4, -5, -6];
+K_int16 = acker(A_bar16, B_bar16, p_track16);
+K_sys16 = K_int16(1:3);
+K_i16 = K_int16(4);
+p_obs16 = [-10, -12, -15];
+L16 = acker(A', C', p_obs16)';
+N16 = length(t);
+x_sys16 = zeros(3, N16);
+x_hat16 = zeros(3, N16);
+xi16 = zeros(1, N16);
+y16 = zeros(1, N16);
+
+for k = 2:N16
+    y_curr = C * x_sys16(:, k-1);
+    y16(k-1) = y_curr;
+    
+    u16 = -K_sys16 * x_hat16(:, k-1) - K_i16 * xi16(k-1);
+    
+    x_sys16(:, k) = x_sys16(:, k-1) + 0.01 * (A * x_sys16(:, k-1) + B * u16);
+    x_hat16(:, k) = x_hat16(:, k-1) + 0.01 * (A * x_hat16(:, k-1) + B * u16 + L16 * (y_curr - C * x_hat16(:, k-1)));
+    xi16(k) = xi16(k-1) + 0.01 * (1 - y_curr);
+end
+
+y16(N16) = C * x_sys16(:, N16);
+
+figure();
+plot(t, y16, 'LineWidth', 2);
+title('Step Response (Integral Tracker with Full-Order Observer)');
+grid on;
+
+figure();
+subplot(3,1,1);
+plot(t, x_sys16(1,:), 'b', t, x_hat16(1,:), 'r--', 'LineWidth', 1.5);
+legend('Actual X1', 'Estimated X1');
+grid on;
+
+subplot(3,1,2);
+plot(t, x_sys16(2,:), 'b', t, x_hat16(2,:), 'r--', 'LineWidth', 1.5);
+legend('Actual X2', 'Estimated X2');
+grid on;
+
+subplot(3,1,3);
+plot(t, x_sys16(3,:), 'b', t, x_hat16(3,:), 'r--', 'LineWidth', 1.5);
+legend('Actual X3', 'Estimated X3');
+grid on;
+
+%% Question 17
+
+P = [C; [1 0 0]; [0 1 0]];
+A_ro = P * A / P;
+B_ro = P * B;
+C_ro = C / P;
+A_11 = A_ro(1,1);
+A_12 = A_ro(1,2:3);
+A_21 = A_ro(2:3,1);
+A_22 = A_ro(2:3,2:3);
+B_1 = B_ro(1,1);
+B_2 = B_ro(2:3,1);
+p_obs17 = [-10, -12];
+L_t17 = place(A_22', A_12', p_obs17);
+L17 = L_t17';
+D_red17 = A_22 - L17 * A_12;
+F_red17 = D_red17 * L17 + A_21 - L17 * A_11;
+G_red17 = B_2 - L17 * B_1;
+A_bar17 = [A zeros(3,1); -C 0];
+B_bar17 = [B; 0];
+p_track17 = [-3, -4, -5, -6];
+K_int17 = acker(A_bar17, B_bar17, p_track17);
+K_sys17 = K_int17(1:3);
+K_i17 = K_int17(4);
+
+N17 = length(t);
+x_sys17 = zeros(3, N17);
+z17 = zeros(2, N17);
+x_hat17 = zeros(3, N17);
+xi17 = zeros(1, N17);
+y17 = zeros(1, N17);
+
+for k = 2:N17
+    y_curr = C * x_sys17(:, k-1);
+    y17(k-1) = y_curr;
+    
+    xb_hat = z17(:, k-1) + L17 * y_curr;
+    x_hat17(:, k-1) = P \ [y_curr; xb_hat];
+    
+    u17 = -K_sys17 * x_hat17(:, k-1) - K_i17 * xi17(k-1);
+    
+    x_sys17(:, k) = x_sys17(:, k-1) + 0.01 * (A * x_sys17(:, k-1) + B * u17);
+    z17(:, k) = z17(:, k-1) + 0.01 * (D_red17 * z17(:, k-1) + F_red17 * y_curr + G_red17 * u17);
+    xi17(k) = xi17(k-1) + 0.01 * (1 - y_curr);
+end
+
+y17(N17) = C * x_sys17(:, N17);
+xb_hat_final = z17(:, N17) + L17 * y17(N17);
+x_hat17(:, N17) = P \ [y17(N17); xb_hat_final];
+
+figure();
+plot(t, y17, 'LineWidth', 2);
+title('Step Response (Integral Tracker with Reduced-Order Observer)');
+grid on;
+
+figure();
+subplot(3,1,1);
+plot(t, x_sys17(1,:), 'b', t, x_hat17(1,:), 'r--', 'LineWidth', 1.5);
+legend('Actual X1', 'Estimated X1');
+grid on;
+
+subplot(3,1,2);
+plot(t, x_sys17(2,:), 'b', t, x_hat17(2,:), 'r--', 'LineWidth', 1.5);
+legend('Actual X2', 'Estimated X2');
+grid on;
+
+subplot(3,1,3);
+plot(t, x_sys17(3,:), 'b', t, x_hat17(3,:), 'r--', 'LineWidth', 1.5);
+legend('Actual X3', 'Estimated X3');
+grid on;
+
+%% 
+
+
