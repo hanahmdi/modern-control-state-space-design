@@ -4,15 +4,12 @@
 
 An extensive undergraduate modern control study spanning **18 analytical and MATLAB simulation sections**. The work explores how a state-space realization supports system-structure analysis, closed-loop pole placement, reference tracking, state estimation, and quadratic optimal feedback.
 
-**Author:** Hannaneh Sadat Ahmadi (`@hanahmdi`)
 
 ## Full academic report
 
 **[Read the complete English academic report (PDF)](docs/ACADEMIC_REPORT.pdf)** — a **21-page A4 technical report** with mathematical derivations, the original simulation figures, 18 numbered study descriptions, implementation notes, limitations, and references.
 
 **[Read the report online in Markdown](docs/ACADEMIC_REPORT.md)** — equations and figures with relative paths for GitHub display.
-
-> **Source integrity:** The original MATLAB code was not modified. The original assignment sheet was unavailable, so topics in the English report are reconstructed from the numbered script and submitted research report, not quoted from an official question sheet. All original plots are historical project evidence; this presentation does not claim a new verified MATLAB run.
 
 ## Plant
 
